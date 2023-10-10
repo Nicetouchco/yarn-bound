@@ -1,5 +1,6 @@
 const common = {
-  entry: './src/index.js',
+  entry: './src/index.ts',
+  mode: 'production',
   output: {
     filename: 'yarn-bound.min.js',
     library: {
@@ -10,23 +11,18 @@ const common = {
   },
   module: {
     rules: [{
-      test: /\.js/,
+      test: /\.ts$/,
       exclude: /node_modules\/(?!@mnbroatch).+/,
       use: {
-        loader: 'babel-loader',
+        loader: 'ts-loader',
         options: {
-          presets: [
-            ['@babel/preset-env',
-              {
-                modules: 'cjs',
-                targets: 'last 4 years'
-              }
-            ]
-          ],
-          plugins: ['add-module-exports']
+          transpileOnly: true
         }
       }
     }]
+  },
+  resolve: {
+    extensions: ['.ts', '.js']
   }
 }
 
@@ -52,24 +48,18 @@ module.exports = [
     },
     module: {
       rules: [{
+        test: /\.ts$/,
         exclude: /node_modules\/(?!@mnbroatch).+/,
         use: {
-          loader: 'babel-loader',
+          loader: 'ts-loader',
           options: {
-            presets: [
-              ['@babel/preset-env',
-                {
-                  modules: 'cjs',
-                  useBuiltIns: 'usage',
-                  corejs: 3,
-                  targets: 'ie 11'
-                }
-              ]
-            ],
-            plugins: ['add-module-exports']
+            transpileOnly: true
           }
         }
       }]
+    },
+    resolve: {
+      extensions: ['.ts', '.js']
     }
   }
 ]

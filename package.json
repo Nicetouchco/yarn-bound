@@ -1,12 +1,12 @@
 {
-  "name": "yarn-bound",
+  "name": "@nicetouch/yarn-bound",
   "version": "0.5.4",
   "description": "Quality of life wrapper around bondage.js",
-  "main": "dist/yarn-bound.js",
+  "main": "dist/yarn-bound.ts",
   "scripts": {
     "test": "jest --coverage --verbose false",
     "lint": "eslint .",
-    "build": "webpack",
+    "build": "tsc && webpack",
     "prepublish": "npm run build"
   },
   "author": "Matthew Broatch",
@@ -23,18 +23,13 @@
     "jest": "^27.4.3",
     "regenerator-runtime": "^0.13.9",
     "standard": "^16.0.4",
+    "ts-loader": "^9.5.0",
+    "typescript": "^5.2.2",
     "webpack": "^5.65.0",
     "webpack-cli": "^4.9.1"
   },
   "dependencies": {
-    "@mnbroatch/bondage": "4.2.4"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mnbroatch/yarn-bound.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mnbroatch/yarn-bound/issues"
-  },
-  "homepage": "https://github.com/mnbroatch/yarn-bound#readme"
+    "@mnbroatch/bondage": "4.2.4",
+    "eventemitter3": "^5.0.1"
+  }
 }
