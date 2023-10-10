@@ -15,9 +15,9 @@ type Options = {
   functions?: Record<string, Function>;
   handleCommand?: (commandResult: bondage.CommandResult) => void;
   combineTextAndOptionsResults?: boolean;
-  locale: string;
+  locale?: string;
   pauseCommand?: string;
-  startAt: string;
+  startAt?: string;
 };
 
 export class YarnBound {
@@ -31,6 +31,8 @@ export class YarnBound {
   runner: bondage.Runner;
   generator: any; // Generator
   eventEmitter = new EventEmitter();
+  startAt: string;
+  dialogue: string;
 
   constructor({
     dialogue,
@@ -38,7 +40,7 @@ export class YarnBound {
     functions,
     handleCommand,
     combineTextAndOptionsResults,
-    locale,
+    locale = "en",
     pauseCommand = "pause",
     startAt = "Start",
   }: Options) {
@@ -51,8 +53,8 @@ export class YarnBound {
     this.locale = locale;
     this.runner = new bondage.Runner();
     this.runner.noEscape = true;
-
-    this.runner.load(dialogue);
+    this.startAt = startAt;
+    this.dialogue = dialogue;
 
     if (variableStorage) {
       variableStorage.display = variableStorage.display || variableStorage.get;
@@ -63,26 +65,29 @@ export class YarnBound {
         this.registerFunction(...entry);
       });
     }
-
-    this.jump(startAt);
   }
 
-  jump(startAt: string): void {
-    this.generator = this.runner.run(startAt) as Generator;
+  start() {
+    if (Object.keys(this.runner.yarnNodes).length === 0) {
+      this.runner.load(this.dialogue);
+    }
+
+    this.jump(this.startAt);
+  }
+
+  jump(startAt: string) {
+    this.generator = this.runner.run(startAt);
     this.advance();
-    this.eventEmitter.emit("advance", this.currentResult);
   }
 
-  handleConsecutiveOptionsNodes(
-    shouldHandleCommand: boolean = false
-  ): IteratorResult<any, any> {
+  handleConsecutiveOptionsNodes(shouldHandleCommand?: boolean) {
     let next = this.generator.next();
     while (
       next.value instanceof bondage.CommandResult &&
       next.value.command !== this.pauseCommand
     ) {
-      if (shouldHandleCommand && this.handleCommand) {
-        this.handleCommand(next.value);
+      if (shouldHandleCommand) {
+        if (this.handleCommand) this.handleCommand(next.value);
       }
       next = this.generator.next();
     }
@@ -196,6 +201,7 @@ export class YarnBound {
     }
 
     this.currentResult = next.value;
+    this.eventEmitter.emit("advance", this.currentResult);
   }
 
   registerFunction(name: string, func: Function) {

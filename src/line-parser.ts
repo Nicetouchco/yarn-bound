@@ -1,6 +1,8 @@
+//@ts-nocheck
+
 type Node = {
   text: string;
-  markup: Array<{
+  markup?: Array<{
     name: string;
     properties?: {
       [key: string]: any;
@@ -26,14 +28,14 @@ type Attribute = {
 };
 
 // mutates node, processing [markup /] and `character:`
-export default function parseLine(node: Node, locale: string) {
+export default function parseLine(node, locale) {
   node.markup = [];
   parseCharacterLabel(node);
   parseMarkup(node, locale);
   node.text = node.text.replace(/(?:\\(.))/g, "$1");
 }
 
-function parseCharacterLabel(node: Node) {
+function parseCharacterLabel(node) {
   const match = node.text.match(/^(\S+):\s+/);
   if (match) {
     node.text = node.text.replace(match[0], "");
@@ -41,18 +43,16 @@ function parseCharacterLabel(node: Node) {
   }
 }
 
-function parseMarkup(node: Node, locale: string) {
-  const attributes: Attribute[] = [];
+function parseMarkup(node, locale) {
+  const attributes = [];
   let noMarkup = false;
 
   const attributeRegex = /(^|[^\\])\[(.*?[^\\])\](.|$)/;
   let textRemaining = node.text;
   let resultText = "";
   let match = textRemaining.match(attributeRegex);
-
   while (match) {
     const { index } = match;
-    if (!index) break;
     const [wholeMatch, charBefore, contents, charAfter] = match;
     const hasLeadingSpace = /\s/.test(charBefore);
     const hasTrailingSpace = /\s/.test(charAfter);
@@ -109,16 +109,10 @@ function parseMarkup(node: Node, locale: string) {
   match = node.text.match(escapedCharacterRegex);
   textRemaining = node.text;
   resultText = "";
-
   while (match) {
-    if (match.index === undefined) break;
     const char = match[1];
     attributes.forEach((attr) => {
-      if (
-        attr.position &&
-        match?.index &&
-        attr.position > resultText.length + match.index
-      ) {
+      if (attr.position > resultText.length + match.index) {
         attr.position -= 1;
       }
     });
@@ -131,7 +125,7 @@ function parseMarkup(node: Node, locale: string) {
 
   node.text = resultText + textRemaining;
 
-  const openTagStacks: Record<string, any> = {};
+  const openTagStacks = {};
   attributes.forEach((attr) => {
     if (!openTagStacks[attr.name]) {
       openTagStacks[attr.name] = [];
@@ -147,7 +141,7 @@ function parseMarkup(node: Node, locale: string) {
         name: openTag.name,
         position: openTag.position,
         properties: openTag.properties,
-        length: attr.position! - openTag.position,
+        length: attr.position - openTag.position,
       });
     } else if (attr.isSelfClosing) {
       node.markup.push({
@@ -158,14 +152,13 @@ function parseMarkup(node: Node, locale: string) {
       });
     } else if (attr.isCloseAll) {
       const openTags = Object.values(openTagStacks).flat();
-
       while (openTags.length) {
         const openTag = openTags.pop();
         node.markup.push({
           name: openTag.name,
           position: openTag.position,
           properties: openTag.properties,
-          length: attr.position! - openTag.position,
+          length: attr.position - openTag.position,
         });
       }
     } else {
@@ -178,8 +171,8 @@ function parseMarkup(node: Node, locale: string) {
   });
 }
 
-function parseAttributeContents(contents: string, locale: string): Attribute {
-  const nameMatch = contents.match(/^\/?([^\s=/]+)(\/|\s|$)/)!;
+function parseAttributeContents(contents, locale) {
+  const nameMatch = contents.match(/^\/?([^\s=/]+)(\/|\s|$)/);
   const isClosing = contents[0] === "/";
   const isSelfClosing = contents[contents.length - 1] === "/";
   const isCloseAll = contents === "/";
@@ -220,7 +213,7 @@ function parseAttributeContents(contents: string, locale: string): Attribute {
   }
 }
 
-function parsePropertyAssignment(propAss: string): Record<string, any> {
+function parsePropertyAssignment(propAss) {
   const [propName, ...rest] = propAss.split("=");
   const stringValue = rest.join("="); // just in case string value had a = in it
   if (!propName || !stringValue) {
@@ -242,23 +235,17 @@ function parsePropertyAssignment(propAss: string): Record<string, any> {
   return { [propName]: value };
 }
 
-function processSelectAttribute(properties: Record<string, any>) {
+function processSelectAttribute(properties) {
   return properties[properties.value];
 }
 
-function processPluralAttribute(
-  properties: Record<string, any>,
-  locale: string
-) {
+function processPluralAttribute(properties, locale) {
   return properties[
     new Intl.PluralRules(locale).select(properties.value)
   ].replace(/%/g, properties.value);
 }
 
-function processOrdinalAttribute(
-  properties: Record<string, any>,
-  locale: string
-) {
+function processOrdinalAttribute(properties, locale) {
   return properties[
     new Intl.PluralRules(locale, { type: "ordinal" }).select(properties.value)
   ].replace(/%/g, properties.value);
